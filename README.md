@@ -6,6 +6,48 @@ Your developers are making hundreds of decisions, hitting dead ends, and buildin
 
 ---
 
+## Prerequisites
+
+**This project requires [`session-forge`](https://www.npmjs.com/package/session-forge)** — the MCP server that Claude Code uses to track decisions, dead ends, journal entries, and session state. Each developer on your team needs session-forge installed and configured in their Claude Code setup.
+
+If your developers aren't already using session-forge, start there first:
+```bash
+npx session-forge
+```
+
+session-forge hub does NOT replace session-forge. It sits alongside it. session-forge continues to work exactly as before — hub just gives your team a shared dashboard to see everyone's data in one place.
+
+---
+
+## How the Three Pieces Fit Together
+
+There are **three separate npm packages** involved. Here's what each one does:
+
+| Package | Who installs it | What it does |
+|---------|----------------|--------------|
+| [`session-forge`](https://www.npmjs.com/package/session-forge) | Each developer | MCP server that Claude Code talks to. Saves decisions, dead ends, journal entries as local JSON files. **You probably already have this.** |
+| [`session-forge-hub`](https://www.npmjs.com/package/session-forge-hub) | IT admin / team lead | Dashboard server that runs on your LAN. Collects data from all developers. Shows activity, search, reports. |
+| [`session-forge-reporter`](https://www.npmjs.com/package/session-forge-reporter) | Each developer | Watches session-forge's local JSON files and syncs new entries to the hub over your local network. This is the bridge between session-forge and the hub. |
+
+```
+Developer's Machine                          Company LAN Server
+┌─────────────────────────────────┐          ┌──────────────────────────┐
+│                                 │          │                          │
+│  Claude Code                    │          │  session-forge hub       │
+│       ↓ (MCP)                   │          │  http://192.168.x.x:3700 │
+│  session-forge                  │          │                          │
+│       ↓ (writes JSON)           │          │  Dashboard, Search,      │
+│  ~/.session-forge/              │          │  Reports, Audit Log      │
+│       ↓ (watches files)         │   HTTP   │                          │
+│  session-forge-reporter  ───────────────→  │  REST API + JSON Storage │
+│                                 │  (LAN)   │                          │
+└─────────────────────────────────┘          └──────────────────────────┘
+```
+
+**session-forge works without the hub.** The hub is optional — it just adds team-wide visibility. If a developer never runs the reporter, their data stays local and nothing breaks.
+
+---
+
 ## Why Local-First Matters
 
 Every AI coding session generates sensitive data: architectural decisions, debugging history, file paths, code context, failed approaches. This is your company's intellectual property.
@@ -16,47 +58,30 @@ Cloud-hosted alternatives route this data through third-party servers. You're tr
 
 ---
 
-## What It Does
+## What the Hub Dashboard Shows
 
-- **Dashboard** — see all your developers' AI coding activity in one place
-- **Agent Registry** — each Claude Code instance registers with a unique API key
-- **Live Activity Feed** — real-time view of checkpoints, decisions, dead ends across the team
+- **Overview** — stats cards, agent grid, recent activity feed across all developers
+- **Agents** — register, monitor, and manage each Claude Code instance
+- **Activity Feed** — real-time view of checkpoints, decisions, dead ends across the team
 - **Cross-Agent Search** — search all decisions and dead ends across all developers
 - **Daily Reports** — auto-generated summaries with highlights, top projects, breakthroughs
 - **Audit Log** — every API call logged with timestamp, agent, IP, and action
-- **Security-First** — bcrypt-hashed API keys, rate limiting, no external dependencies
-
----
-
-## Architecture
-
-```
-Company's Local Server
-┌──────────────────────────────────────────────┐
-│  session-forge hub (Node + Express)          │
-│  http://192.168.x.x:3700                     │
-│                                              │
-│  REST API  ←→  Dashboard  ←→  JSON Storage   │
-└──────────────────────────────────────────────┘
-        ↑ HTTP POST (LAN only)
-        │
-   ┌────┴────────────────────────────────────┐
-   │  Developer Machines:                    │
-   │                                         │
-   │  Claude Code → session-forge (MCP)      │
-   │                    ↓                    │
-   │              local JSON files           │
-   │                    ↓                    │
-   │         session-forge-reporter          │
-   │         (watches & syncs to hub)        │
-   └─────────────────────────────────────────┘
-```
+- **Security Page** — educational content about why local-first matters
+- **Donate** — optional Stripe integration if you want to support development
 
 ---
 
 ## Quick Start
 
-### 1. Start the hub
+### 1. Make sure developers have session-forge
+
+Each developer needs session-forge configured in their Claude Code. If they don't have it yet:
+```bash
+npx session-forge
+```
+Then add it to their Claude Code MCP settings. See the [session-forge docs](https://www.npmjs.com/package/session-forge) for setup.
+
+### 2. Start the hub (on your LAN server or any machine)
 
 ```bash
 npx session-forge-hub
@@ -64,11 +89,11 @@ npx session-forge-hub
 
 On first run, it generates your admin API key and prints it to the terminal. **Save it — it's shown once.**
 
-### 2. Open the dashboard
+### 3. Open the dashboard
 
-Navigate to `http://localhost:3700` and enter your admin key.
+Navigate to `http://localhost:3700` (or your server's LAN IP) and enter your admin key.
 
-### 3. Register an agent
+### 4. Register each developer as an agent
 
 In the dashboard, click "Register Agent" and fill in:
 - **Name**: e.g. "Alice's Claude Code"
@@ -77,13 +102,15 @@ In the dashboard, click "Register Agent" and fill in:
 
 You'll get an agent API key. Give this to the developer.
 
-### 4. Start the reporter on each developer's machine
+### 5. Each developer runs the reporter
+
+On each developer's machine (where session-forge is already saving data):
 
 ```bash
 npx session-forge-reporter --hub http://YOUR_HUB_IP:3700 --key sfh_agent_...
 ```
 
-The reporter watches session-forge's local JSON files and syncs new entries to the hub.
+The reporter watches session-forge's local JSON files and syncs new entries to the hub. It does a full sync on startup, then polls for changes every 5 seconds.
 
 ---
 
