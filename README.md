@@ -4,7 +4,7 @@
 
 Your developers are making hundreds of decisions, hitting dead ends, and building institutional knowledge every day through AI coding assistants. session-forge hub gives you visibility into all of it — without sending a single byte to anyone else's servers.
 
-https://github.com/420247jake/session-forge-hub/raw/main/promo/sessionforge.mp4
+https://github.com/420247jake/session-forge-hub/raw/master/promo/sessionforge.mp4
 
 ---
 
