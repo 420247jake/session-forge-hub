@@ -1,6 +1,6 @@
 {
   "name": "session-forge-hub",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Team intelligence dashboard for session-forge. Local-first, zero cloud dependencies. See what your AI coding agents are doing — on YOUR infrastructure.",
   "type": "module",
   "main": "dist/index.js",

@@ -293,6 +293,7 @@
             '<a href="activity.html">Activity</a>' +
             '<a href="search.html">Search</a>' +
             '<a href="reports.html">Reports</a>' +
+            '<a href="sync.html">Sync</a>' +
             '<a href="security.html">Security</a>' +
             '<a href="donate.html">Donate</a>' +
           '</div>' +

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remote Access Guide - session-forge hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <span class="brand-icon">S</span>
+      session-forge hub
+    </a>
+    <button class="navbar-hamburger" aria-label="Toggle navigation">&#9776;</button>
+    <div class="navbar-links">
+      <a href="index.html">Overview</a>
+      <a href="agents.html">Agents</a>
+      <a href="activity.html">Activity</a>
+      <a href="search.html">Search</a>
+      <a href="reports.html">Reports</a>
+      <a href="sync.html">Sync</a>
+      <a href="security.html">Security</a>
+      <a href="donate.html">Donate</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-container fade-in">
+  <div class="page-header">
+    <h1>Remote Access Guide</h1>
+    <p class="subtitle">How to securely access your hub dashboard from outside the LAN</p>
+  </div>
+
+  <!-- Overview -->
+  <div class="card mb-lg">
+    <div class="card-header">
+      <h2>When Do You Need This?</h2>
+    </div>
+    <div class="card-body">
+      <p class="mb-md">By default, session-forge hub runs on your local network (LAN). Developers connect over <code>http://192.168.x.x:3700</code>. This is the most secure setup because nothing leaves your network.</p>
+
+      <p class="mb-md">You might want remote access if:</p>
+      <ul class="spaced-list">
+        <li>You have <strong>remote developers</strong> who aren't on the office LAN</li>
+        <li>You want to <strong>check the dashboard from home</strong></li>
+        <li>Your team works across <strong>multiple offices</strong> connected by VPN</li>
+      </ul>
+
+      <div class="alert alert-warning">
+        <strong>Important:</strong> Exposing the hub to the internet means your data is accessible remotely. Always use HTTPS and consider IP whitelisting or VPN access.
+      </div>
+    </div>
+  </div>
+
+  <!-- Option 1: VPN -->
+  <div class="card mb-lg">
+    <div class="card-header">
+      <h2>Option 1: VPN (Recommended)</h2>
+    </div>
+    <div class="card-body">
+      <p class="mb-md">The safest approach. Remote users connect to your office VPN, then access the hub as if they were on the LAN. No changes needed to the hub server.</p>
+
+      <div class="guide-steps">
+        <div class="guide-step">
+          <div class="step-number">1</div>
+          <div>
+            <strong>Set up a VPN server</strong>
+            <p class="text-secondary">WireGuard, OpenVPN, or Tailscale (easiest). Your IT admin likely already has one.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="step-number">2</div>
+          <div>
+            <strong>Remote users connect to VPN</strong>
+            <p class="text-secondary">Once connected, they're on the same network as the hub.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="step-number">3</div>
+          <div>
+            <strong>Access the hub normally</strong>
+            <p class="text-secondary">Same URL: <code>http://192.168.x.x:3700</code></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-success mt-md">
+        <strong>Pros:</strong> No ports exposed to the internet. The hub stays completely internal. Zero configuration changes needed.
+      </div>
+    </div>
+  </div>
+
+  <!-- Option 2: Reverse Proxy -->
+  <div class="card mb-lg">
+    <div class="card-header">
+      <h2>Option 2: Reverse Proxy with SSL</h2>
+    </div>
+    <div class="card-body">
+      <p class="mb-md">If VPN isn't practical, you can expose the hub through a reverse proxy with HTTPS. This is how most web apps handle it.</p>
+
+      <div class="guide-steps">
+        <div class="guide-step">
+          <div class="step-number">1</div>
+          <div>
+            <strong>Point a subdomain to your server</strong>
+            <p class="text-secondary">e.g. <code>forge.yourcompany.com</code> &rarr; your server's public IP</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="step-number">2</div>
+          <div>
+            <strong>Install Nginx and Certbot</strong>
+            <pre class="code-block"><code>sudo apt install nginx certbot python3-certbot-nginx</code></pre>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="step-number">3</div>
+          <div>
+            <strong>Create Nginx config</strong>
+            <pre class="code-block"><code># /etc/nginx/sites-available/forge-hub
+server {
+    listen 80;
+    server_name forge.yourcompany.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3700;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+</code></pre>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="step-number">4</div>
+          <div>
+            <strong>Enable and get SSL certificate</strong>
+            <pre class="code-block"><code>sudo ln -s /etc/nginx/sites-available/forge-hub /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d forge.yourcompany.com</code></pre>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="step-number">5</div>
+          <div>
+            <strong>Restrict access (recommended)</strong>
+            <p class="text-secondary">Add IP whitelisting to only allow known office/home IPs:</p>
+            <pre class="code-block"><code># Add inside the location block:
+allow 203.0.113.0/24;    # Office IP range
+allow 198.51.100.5;       # Admin home IP
+deny all;</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option 3: Cloudflare Tunnel -->
+  <div class="card mb-lg">
+    <div class="card-header">
+      <h2>Option 3: Cloudflare Tunnel (Zero Trust)</h2>
+    </div>
+    <div class="card-body">
+      <p class="mb-md">No ports opened, no public IP needed. Cloudflare tunnels the connection through their network. Free tier available.</p>
+
+      <div class="guide-steps">
+        <div class="guide-step">
+          <div class="step-number">1</div>
+          <div>
+            <strong>Install cloudflared</strong>
+            <pre class="code-block"><code># Linux
+curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+chmod +x /usr/local/bin/cloudflared
+
+# Windows (winget)
+winget install cloudflare.cloudflared</code></pre>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="step-number">2</div>
+          <div>
+            <strong>Create the tunnel</strong>
+            <pre class="code-block"><code>cloudflared tunnel login
+cloudflared tunnel create forge-hub
+cloudflared tunnel route dns forge-hub forge.yourcompany.com</code></pre>
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="step-number">3</div>
+          <div>
+            <strong>Run the tunnel</strong>
+            <pre class="code-block"><code>cloudflared tunnel --url http://localhost:3700 run forge-hub</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info mt-md">
+        <strong>Bonus:</strong> Cloudflare Access lets you add email-based authentication on top, so only approved team members can reach the dashboard. No extra code needed.
+      </div>
+    </div>
+  </div>
+
+  <!-- Reporter Config for Remote -->
+  <div class="card mb-lg">
+    <div class="card-header">
+      <h2>Configuring Reporters for Remote Access</h2>
+    </div>
+    <div class="card-body">
+      <p class="mb-md">Once your hub is accessible remotely, update each developer's reporter config to use the public URL:</p>
+
+      <pre class="code-block"><code># ~/.session-forge-reporter.json
+{
+  "hubUrl": "https://forge.yourcompany.com",
+  "agentApiKey": "sfh_agent_..."
+}</code></pre>
+
+      <p class="text-secondary mt-md">Or use the CLI flag:</p>
+      <pre class="code-block"><code>npx session-forge-reporter --hub https://forge.yourcompany.com --key sfh_agent_...</code></pre>
+
+      <div class="alert alert-warning mt-md">
+        <strong>Note:</strong> All API traffic is authenticated with bearer tokens. However, always use HTTPS when going over the internet to protect the tokens in transit.
+      </div>
+    </div>
+  </div>
+
+  <!-- Security Checklist -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Security Checklist</h2>
+    </div>
+    <div class="card-body">
+      <div class="checklist">
+        <label class="checklist-item">
+          <input type="checkbox">
+          <span>HTTPS enabled (SSL/TLS certificate installed)</span>
+        </label>
+        <label class="checklist-item">
+          <input type="checkbox">
+          <span>Admin key stored securely (password manager, not plain text)</span>
+        </label>
+        <label class="checklist-item">
+          <input type="checkbox">
+          <span>IP whitelisting or VPN access configured</span>
+        </label>
+        <label class="checklist-item">
+          <input type="checkbox">
+          <span>Firewall rules reviewed (only necessary ports open)</span>
+        </label>
+        <label class="checklist-item">
+          <input type="checkbox">
+          <span>Agent API keys distributed securely to each developer</span>
+        </label>
+        <label class="checklist-item">
+          <input type="checkbox">
+          <span>Regular backups of hub data directory configured</span>
+        </label>
+        <label class="checklist-item">
+          <input type="checkbox">
+          <span>Audit log reviewed periodically for suspicious access</span>
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "session-forge-reporter",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Agent reporter for session-forge hub. Watches your local session-forge data and syncs to your team's hub server.",
   "type": "module",
   "main": "dist/index.js",

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms & Privacy - session-forge hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <span class="brand-icon">S</span>
+      session-forge hub
+    </a>
+    <button class="navbar-hamburger" aria-label="Toggle navigation">&#9776;</button>
+    <div class="navbar-links">
+      <a href="index.html">Overview</a>
+      <a href="agents.html">Agents</a>
+      <a href="activity.html">Activity</a>
+      <a href="search.html">Search</a>
+      <a href="reports.html">Reports</a>
+      <a href="sync.html">Sync</a>
+      <a href="security.html">Security</a>
+      <a href="donate.html">Donate</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-container fade-in">
+  <div class="page-header">
+    <h1>Terms & Privacy</h1>
+    <p class="subtitle">The short version: your data is yours, we collect nothing</p>
+  </div>
+
+  <!-- TL;DR -->
+  <div class="card mb-lg" style="border-left: 4px solid var(--color-green);">
+    <div class="card-body">
+      <h2 class="mb-md">TL;DR</h2>
+      <ul class="spaced-list">
+        <li><strong>session-forge hub is free, open-source software (MIT license).</strong></li>
+        <li><strong>It runs entirely on your server.</strong> We have no access to it.</li>
+        <li><strong>We collect zero data.</strong> No analytics, no telemetry, no phone-home.</li>
+        <li><strong>Your data never leaves your infrastructure.</strong> Not to us, not to anyone.</li>
+        <li><strong>You can inspect every line of code.</strong> It's all on GitHub.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- License -->
+  <div class="card mb-lg">
+    <div class="card-header">
+      <h2>License</h2>
+    </div>
+    <div class="card-body">
+      <p class="mb-md">session-forge hub is distributed under the <strong>MIT License</strong>.</p>
+      <p class="mb-md">This means you can:</p>
+      <ul class="spaced-list mb-md">
+        <li>Use it for any purpose (commercial, personal, educational)</li>
+        <li>Modify the source code</li>
+        <li>Distribute copies</li>
+        <li>Include it in proprietary software</li>
+      </ul>
+      <p class="text-secondary">The only requirement is that the license notice is included in copies. That's it.</p>
+    </div>
+  </div>
+
+  <!-- Privacy -->
+  <div class="card mb-lg">
+    <div class="card-header">
+      <h2>Privacy Policy</h2>
+    </div>
+    <div class="card-body">
+      <h3 class="mb-sm">What we collect</h3>
+      <p class="mb-lg">Nothing. Zero. We have no servers running. We have no analytics. We have no way to see your data even if we wanted to.</p>
+
+      <h3 class="mb-sm">What the software stores</h3>
+      <p class="mb-md">session-forge hub stores data <strong>on your server</strong>, in JSON files in a directory you control. This data includes:</p>
+      <ul class="spaced-list mb-md">
+        <li>Agent records (developer names, machine names, API key hashes)</li>
+        <li>Session checkpoints (task descriptions, file paths, status)</li>
+        <li>Decisions and dead ends (technical choices and debugging notes)</li>
+        <li>Journal entries (session summaries)</li>
+        <li>Audit logs (who accessed what API endpoints)</li>
+      </ul>
+      <p class="text-secondary mb-lg">All of this is under your control. You can delete it, back it up, or move it at any time.</p>
+
+      <h3 class="mb-sm">External connections</h3>
+      <p class="mb-md">The hub makes <strong>zero external network calls</strong> by default. The only exceptions:</p>
+      <ul class="spaced-list mb-md">
+        <li><strong>Google Fonts</strong> — the dashboard loads the Inter font from Google's CDN. This is a standard web practice but can be self-hosted if needed.</li>
+        <li><strong>Stripe</strong> — <em>only</em> if you configure the donate page with Stripe keys. This is entirely optional and disabled by default.</li>
+      </ul>
+
+      <h3 class="mb-sm">API keys</h3>
+      <p class="mb-md">API keys are <strong>bcrypt-hashed</strong> before storage. The raw key is shown once at creation time and never stored. If compromised, keys can be rotated without re-registering the agent.</p>
+
+      <h3 class="mb-sm">Data retention</h3>
+      <p>You control retention. The hub has configurable entry caps (500 checkpoints, 200 decisions, 100 dead ends, 100 journal entries per agent). You can prune data manually or adjust these limits.</p>
+    </div>
+  </div>
+
+  <!-- Data Sovereignty -->
+  <div class="card mb-lg">
+    <div class="card-header">
+      <h2>Data Sovereignty</h2>
+    </div>
+    <div class="card-body">
+      <p class="mb-md">This section matters if you're evaluating session-forge hub for corporate use.</p>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <h4>GDPR / CCPA Compliance</h4>
+          <p class="text-secondary">Since no data leaves your infrastructure, the standard data processing concerns with third-party SaaS don't apply. You're both the data controller and processor.</p>
+        </div>
+        <div class="info-item">
+          <h4>SOC 2 / ISO 27001</h4>
+          <p class="text-secondary">Self-hosted means the hub falls under your existing security controls and audit scope. No third-party sub-processors to evaluate.</p>
+        </div>
+        <div class="info-item">
+          <h4>Air-Gapped Environments</h4>
+          <p class="text-secondary">session-forge hub works completely offline. No internet required. The dashboard uses no CDN resources (except Google Fonts which can be self-hosted).</p>
+        </div>
+        <div class="info-item">
+          <h4>Data Residency</h4>
+          <p class="text-secondary">Your data lives exactly where you put the server. No cross-border data transfer concerns.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Donations -->
+  <div class="card mb-lg">
+    <div class="card-header">
+      <h2>About Donations</h2>
+    </div>
+    <div class="card-body">
+      <p class="mb-md">session-forge hub is free. Donations are entirely optional and go toward continued development.</p>
+      <p class="mb-md">If you donate through the <a href="donate.html">donate page</a>:</p>
+      <ul class="spaced-list">
+        <li>Payments are processed by <strong>Stripe</strong> — we never see your card details</li>
+        <li>Stripe's standard privacy policy applies to the payment transaction only</li>
+        <li>We receive: the amount, your name (if provided), and email (for receipt only)</li>
+        <li>We do not use donation information for marketing or share it with anyone</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Contact -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Questions?</h2>
+    </div>
+    <div class="card-body">
+      <p>If you have questions about privacy, licensing, or how data is handled, open an issue on GitHub or reach out to the maintainers.</p>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+
+</body>
+</html>

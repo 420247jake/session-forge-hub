@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sync & Export - session-forge hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <span class="brand-icon">S</span>
+      session-forge hub
+    </a>
+    <button class="navbar-hamburger" aria-label="Toggle navigation">&#9776;</button>
+    <div class="navbar-links">
+      <a href="index.html">Overview</a>
+      <a href="agents.html">Agents</a>
+      <a href="activity.html">Activity</a>
+      <a href="search.html">Search</a>
+      <a href="reports.html">Reports</a>
+      <a href="sync.html">Sync</a>
+      <a href="security.html">Security</a>
+      <a href="donate.html">Donate</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-container fade-in">
+  <div class="page-header">
+    <h1>Sync & Export</h1>
+    <p class="subtitle">Export data from the hub to back up or sync to other machines</p>
+  </div>
+
+  <!-- Export Section -->
+  <div class="card mb-lg">
+    <div class="card-header">
+      <h2>Export Data</h2>
+    </div>
+    <div class="card-body">
+      <!-- Scope Selection -->
+      <div class="form-group mb-md">
+        <label class="form-label">Scope</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="export-scope" value="all" checked>
+            <span>All Agents</span>
+            <small class="text-secondary">Export everything from all active agents</small>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="export-scope" value="select">
+            <span>Select Agents</span>
+            <small class="text-secondary">Choose specific agents to export</small>
+          </label>
+        </div>
+      </div>
+
+      <!-- Agent Selection (shown when "select" scope) -->
+      <div id="agent-select-area" class="form-group mb-md" style="display:none;">
+        <label class="form-label">Select Agents</label>
+        <div id="agent-checkboxes" class="checkbox-grid">
+          <div class="text-secondary">Loading agents...</div>
+        </div>
+      </div>
+
+      <!-- Data Types -->
+      <div class="form-group mb-md">
+        <label class="form-label">Data Types</label>
+        <div class="checkbox-grid">
+          <label class="checkbox-label">
+            <input type="checkbox" name="data-type" value="checkpoints" checked>
+            <span>Checkpoints</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="data-type" value="decisions" checked>
+            <span>Decisions</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="data-type" value="dead_ends" checked>
+            <span>Dead Ends</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="data-type" value="journal" checked>
+            <span>Journal</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="data-type" value="profile" checked>
+            <span>Profiles</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="form-row mb-md">
+        <div class="form-group">
+          <label class="form-label" for="date-from">From Date (optional)</label>
+          <input type="date" id="date-from" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="date-to">To Date (optional)</label>
+          <input type="date" id="date-to" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="filter-project">Project (optional)</label>
+          <input type="text" id="filter-project" class="form-input" placeholder="e.g. session-forge">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="export-btn">Export Data</button>
+    </div>
+  </div>
+
+  <!-- Export Result / Preview -->
+  <div id="export-result" style="display:none;" class="card mb-lg">
+    <div class="card-header">
+      <h2>Export Result</h2>
+    </div>
+    <div class="card-body">
+      <div id="export-stats" class="stat-grid mb-md"></div>
+      <div class="flex gap-md">
+        <button class="btn btn-primary" id="download-btn">Download as JSON</button>
+        <button class="btn btn-ghost" id="copy-btn">Copy to Clipboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Section -->
+  <div class="card mb-lg">
+    <div class="card-header">
+      <h2>Import Data</h2>
+    </div>
+    <div class="card-body">
+      <p class="text-secondary mb-md">Import an export bundle from another hub or a backup. Agents in the bundle must already be registered on this hub.</p>
+
+      <div class="form-group mb-md">
+        <label class="form-label">Merge Strategy</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="merge-strategy" value="append" checked>
+            <span>Append</span>
+            <small class="text-secondary">Add new entries alongside existing data</small>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="merge-strategy" value="replace">
+            <span>Replace</span>
+            <small class="text-secondary">Overwrite existing data with imported data</small>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group mb-md">
+        <label class="form-label" for="import-file">Select Export File</label>
+        <input type="file" id="import-file" class="form-input" accept=".json">
+      </div>
+
+      <button class="btn btn-primary" id="import-btn" disabled>Import Data</button>
+
+      <div id="import-result" style="display:none;" class="mt-md"></div>
+    </div>
+  </div>
+
+  <!-- CLI Sync Guide -->
+  <div class="card">
+    <div class="card-header">
+      <h2>CLI Sync</h2>
+    </div>
+    <div class="card-body">
+      <p class="text-secondary mb-md">You can also export/import from the command line using the reporter tool:</p>
+      <pre class="code-block"><code># Export all agents to a file
+npx session-forge-reporter sync --hub http://your-hub:3700 --key sfh_admin_... --output backup.json
+
+# Export specific agents
+npx session-forge-reporter sync --hub http://your-hub:3700 --key sfh_admin_... --agents agent1-id,agent2-id --output backup.json
+
+# Import from a backup
+npx session-forge-reporter sync --hub http://your-hub:3700 --key sfh_admin_... --import backup.json</code></pre>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var SFH = window.SFH;
+  var esc = SFH.escapeHtml;
+  var exportBundle = null;
+
+  if (!SFH.initAuth()) return;
+
+  // --- Scope toggle ---
+  var scopeRadios = document.querySelectorAll('input[name="export-scope"]');
+  var agentSelectArea = document.getElementById('agent-select-area');
+
+  scopeRadios.forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      if (this.value === 'select') {
+        agentSelectArea.style.display = 'block';
+        loadAgents();
+      } else {
+        agentSelectArea.style.display = 'none';
+      }
+    });
+  });
+
+  // --- Load agents for selection ---
+  var agentsLoaded = false;
+
+  async function loadAgents() {
+    if (agentsLoaded) return;
+
+    var container = document.getElementById('agent-checkboxes');
+    try {
+      var data = await SFH.apiFetch('/sync/agents');
+      if (!data.agents || data.agents.length === 0) {
+        container.innerHTML = '<div class="text-secondary">No active agents found.</div>';
+        return;
+      }
+
+      var html = '';
+      data.agents.forEach(function (agent) {
+        var counts = agent.counts;
+        var total = counts.checkpoints + counts.decisions + counts.dead_ends + counts.journal;
+        html += '<label class="checkbox-label">' +
+          '<input type="checkbox" name="agent-select" value="' + esc(agent.id) + '" checked>' +
+          '<span>' + esc(agent.name) + '</span>' +
+          '<small class="text-secondary">' + esc(agent.developer) + ' @ ' + esc(agent.machine) + ' (' + total + ' entries)</small>' +
+          '</label>';
+      });
+      container.innerHTML = html;
+      agentsLoaded = true;
+    } catch (err) {
+      container.innerHTML = '<div class="alert alert-error">Failed to load agents: ' + esc(err.message) + '</div>';
+    }
+  }
+
+  // --- Export ---
+  document.getElementById('export-btn').addEventListener('click', async function () {
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Exporting...';
+
+    try {
+      // Build request body
+      var scope = document.querySelector('input[name="export-scope"]:checked').value;
+      var body = { scope: scope };
+
+      // Selected agents
+      if (scope === 'select') {
+        var checked = document.querySelectorAll('input[name="agent-select"]:checked');
+        body.agent_ids = Array.from(checked).map(function (cb) { return cb.value; });
+        if (body.agent_ids.length === 0) {
+          SFH.showToast('Select at least one agent.', 'warning');
+          btn.disabled = false;
+          btn.textContent = 'Export Data';
+          return;
+        }
+      }
+
+      // Data types
+      var typeCheckboxes = document.querySelectorAll('input[name="data-type"]:checked');
+      var types = Array.from(typeCheckboxes).map(function (cb) { return cb.value; });
+      if (types.length < 5) {
+        body.data_types = types;
+      }
+
+      // Date range
+      var dateFrom = document.getElementById('date-from').value;
+      var dateTo = document.getElementById('date-to').value;
+      if (dateFrom) body.date_from = new Date(dateFrom).toISOString();
+      if (dateTo) body.date_to = new Date(dateTo + 'T23:59:59').toISOString();
+
+      // Project
+      var project = document.getElementById('filter-project').value.trim();
+      if (project) body.project = project;
+
+      // Make request
+      var data = await SFH.apiFetch('/sync/export', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+
+      exportBundle = data;
+
+      // Show result
+      var resultEl = document.getElementById('export-result');
+      resultEl.style.display = 'block';
+
+      var stats = data.stats;
+      document.getElementById('export-stats').innerHTML =
+        '<div class="stat-card"><div class="stat-value">' + stats.total_agents + '</div><div class="stat-label">Agents</div></div>' +
+        '<div class="stat-card"><div class="stat-value">' + stats.total_checkpoints + '</div><div class="stat-label">Checkpoints</div></div>' +
+        '<div class="stat-card"><div class="stat-value">' + stats.total_decisions + '</div><div class="stat-label">Decisions</div></div>' +
+        '<div class="stat-card"><div class="stat-value">' + stats.total_dead_ends + '</div><div class="stat-label">Dead Ends</div></div>' +
+        '<div class="stat-card"><div class="stat-value">' + stats.total_journal_entries + '</div><div class="stat-label">Journal</div></div>';
+
+      SFH.showToast('Export ready! ' + stats.total_agents + ' agents, ' +
+        (stats.total_checkpoints + stats.total_decisions + stats.total_dead_ends + stats.total_journal_entries) +
+        ' total entries.', 'success');
+
+    } catch (err) {
+      SFH.showToast('Export failed: ' + err.message, 'error');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Export Data';
+  });
+
+  // --- Download JSON ---
+  document.getElementById('download-btn').addEventListener('click', function () {
+    if (!exportBundle) return;
+    var blob = new Blob([JSON.stringify(exportBundle, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    var date = new Date().toISOString().split('T')[0];
+    a.download = 'session-forge-hub-export-' + date + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    SFH.showToast('Download started.', 'success');
+  });
+
+  // --- Copy to Clipboard ---
+  document.getElementById('copy-btn').addEventListener('click', async function () {
+    if (!exportBundle) return;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(exportBundle, null, 2));
+      SFH.showToast('Copied to clipboard.', 'success');
+    } catch (_) {
+      SFH.showToast('Failed to copy. Try downloading instead.', 'error');
+    }
+  });
+
+  // --- Import File ---
+  var importFile = document.getElementById('import-file');
+  var importBtn = document.getElementById('import-btn');
+
+  importFile.addEventListener('change', function () {
+    importBtn.disabled = !this.files || this.files.length === 0;
+  });
+
+  importBtn.addEventListener('click', async function () {
+    var file = importFile.files[0];
+    if (!file) return;
+
+    importBtn.disabled = true;
+    importBtn.textContent = 'Importing...';
+
+    var resultEl = document.getElementById('import-result');
+
+    try {
+      var text = await file.text();
+      var bundle = JSON.parse(text);
+
+      if (!bundle.agents || !Array.isArray(bundle.agents)) {
+        throw new Error('Invalid export file: missing agents array');
+      }
+
+      var mergeStrategy = document.querySelector('input[name="merge-strategy"]:checked').value;
+
+      var data = await SFH.apiFetch('/sync/import?merge_strategy=' + mergeStrategy, {
+        method: 'POST',
+        body: JSON.stringify(bundle),
+      });
+
+      // Show results
+      var html = '<div class="alert alert-success mb-md">' + esc(data.message) + '</div>';
+
+      if (data.agents && data.agents.length > 0) {
+        html += '<table class="data-table"><thead><tr>' +
+          '<th>Agent</th><th>Status</th><th>Checkpoints</th><th>Decisions</th><th>Dead Ends</th><th>Journal</th>' +
+          '</tr></thead><tbody>';
+
+        data.agents.forEach(function (a) {
+          var statusClass = a.status === 'imported' ? 'badge-success' : 'badge-warning';
+          html += '<tr>' +
+            '<td>' + esc(a.agent_name) + '</td>' +
+            '<td><span class="badge ' + statusClass + '">' + esc(a.status) + '</span>' +
+              (a.reason ? ' <small class="text-secondary">' + esc(a.reason) + '</small>' : '') + '</td>' +
+            '<td>' + a.imported.checkpoints + '</td>' +
+            '<td>' + a.imported.decisions + '</td>' +
+            '<td>' + a.imported.dead_ends + '</td>' +
+            '<td>' + a.imported.journal + '</td>' +
+            '</tr>';
+        });
+
+        html += '</tbody></table>';
+      }
+
+      resultEl.innerHTML = html;
+      resultEl.style.display = 'block';
+      SFH.showToast('Import complete!', 'success');
+
+    } catch (err) {
+      resultEl.innerHTML = '<div class="alert alert-error">' + esc(err.message) + '</div>';
+      resultEl.style.display = 'block';
+      SFH.showToast('Import failed: ' + err.message, 'error');
+    }
+
+    importBtn.disabled = false;
+    importBtn.textContent = 'Import Data';
+  });
+
+})();
+</script>
+
+</body>
+</html>

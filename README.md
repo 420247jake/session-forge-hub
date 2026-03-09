@@ -4,6 +4,8 @@
 
 Your developers are making hundreds of decisions, hitting dead ends, and building institutional knowledge every day through AI coding assistants. session-forge hub gives you visibility into all of it — without sending a single byte to anyone else's servers.
 
+https://github.com/420247jake/session-forge-hub/raw/main/promo/sessionforge.mp4
+
 ---
 
 ## Prerequisites
@@ -67,6 +69,8 @@ Cloud-hosted alternatives route this data through third-party servers. You're tr
 - **Daily Reports** — auto-generated summaries with highlights, top projects, breakthroughs
 - **Audit Log** — every API call logged with timestamp, agent, IP, and action
 - **Security Page** — educational content about why local-first matters
+- **Sync & Export** — export/import all agent data with scope filters (all, self, select)
+- **Remote Access Guide** — setup instructions for VPN, Nginx, and Cloudflare Tunnel
 - **Donate** — optional Stripe integration if you want to support development
 
 ---
@@ -140,6 +144,15 @@ npx session-forge-reporter --hub <url> --key <key> [--forge-dir <dir>] [--poll <
   "hubUrl": "http://192.168.1.100:3700",
   "agentApiKey": "sfh_agent_..."
 }
+
+# Sync mode — export all hub data to a file
+npx session-forge-reporter sync --hub <url> --key <admin_key> --output backup.json
+
+# Sync mode — import data from a file
+npx session-forge-reporter sync --hub <url> --key <admin_key> --import backup.json
+
+# Export specific agents only
+npx session-forge-reporter sync --hub <url> --key <admin_key> --agents id1,id2 --output partial.json
 ```
 
 ---
@@ -208,6 +221,13 @@ npx session-forge-reporter --hub <url> --key <key> [--forge-dir <dir>] [--poll <
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/reports/daily?date=` | Daily report |
+
+### Sync & Export (Admin or Agent key)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/sync/export` | Export data bundle (scope: all, self, select) |
+| POST | `/api/sync/import` | Import data bundle (admin only) |
+| GET | `/api/sync/agents` | List agents for sync UI |
 
 ### Admin
 | Method | Path | Description |

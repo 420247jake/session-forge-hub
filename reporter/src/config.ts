@@ -9,6 +9,12 @@ export interface ReporterConfig {
   pollIntervalMs: number;
   batchMode: boolean;
   retryMaxAttempts: number;
+  // Sync mode options
+  syncMode: false | "export" | "import";
+  syncOutput: string;
+  syncImportFile: string;
+  syncScope: "all" | "self" | "select";
+  syncAgentIds: string[];
 }
 
 function getDefaultForgeDir(): string {
@@ -33,6 +39,11 @@ export function loadConfig(args: string[]): ReporterConfig {
     pollIntervalMs: 5000,
     batchMode: true,
     retryMaxAttempts: 5,
+    syncMode: false,
+    syncOutput: "",
+    syncImportFile: "",
+    syncScope: "all",
+    syncAgentIds: [],
   };
 
   // Try config file first
@@ -65,6 +76,24 @@ export function loadConfig(args: string[]): ReporterConfig {
       case "--poll":
         config.pollIntervalMs = parseInt(args[++i]) || 5000;
         break;
+      case "sync":
+        // Next arg determines export or import
+        config.syncMode = "export"; // default sync mode
+        break;
+      case "--output":
+        config.syncOutput = args[++i] || "";
+        break;
+      case "--import":
+        config.syncMode = "import";
+        config.syncImportFile = args[++i] || "";
+        break;
+      case "--scope":
+        config.syncScope = (args[++i] || "all") as "all" | "self" | "select";
+        break;
+      case "--agents":
+        config.syncAgentIds = (args[++i] || "").split(",").filter(Boolean);
+        if (config.syncAgentIds.length > 0) config.syncScope = "select";
+        break;
       case "--help":
         console.log(`
 session-forge-reporter — Sync your session-forge data to a hub server
@@ -72,11 +101,23 @@ session-forge-reporter — Sync your session-forge data to a hub server
 Usage:
   npx session-forge-reporter --hub <url> --key <api_key>
 
+Watch mode (default):
+  Watches local session-forge data and pushes changes to the hub.
+
+Sync mode:
+  npx session-forge-reporter sync --hub <url> --key <admin_key> --output backup.json
+  npx session-forge-reporter sync --hub <url> --key <admin_key> --import backup.json
+  npx session-forge-reporter sync --hub <url> --key <admin_key> --agents id1,id2 --output partial.json
+
 Options:
   --hub <url>        Hub server URL (e.g. http://192.168.1.100:3700)
-  --key <key>        Agent API key (sfh_agent_...)
+  --key <key>        API key (sfh_agent_... for watch, sfh_admin_... for sync)
   --forge-dir <dir>  Session-forge data directory (default: auto-detected)
   --poll <ms>        Poll interval in milliseconds (default: 5000)
+  --output <file>    Export hub data to this JSON file
+  --import <file>    Import data from a JSON file into the hub
+  --scope <scope>    Export scope: all, self, select (default: all)
+  --agents <ids>     Comma-separated agent IDs (implies --scope select)
   --help             Show this help
 
 Config file:

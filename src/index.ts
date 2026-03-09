@@ -21,6 +21,7 @@ import { adminRoutes } from "./routes/admin.js";
 import { searchRoutes } from "./routes/search.js";
 import { reportRoutes } from "./routes/reports.js";
 import { stripeRoutes } from "./routes/stripe.js";
+import { syncRoutes } from "./routes/sync.js";
 import type { HubConfig } from "./types/hub.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -75,7 +76,7 @@ async function main() {
     },
   }));
 
-  app.use(express.json({ limit: "1mb" }));
+  app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ extended: true }));
 
   // Serve static dashboard
@@ -92,6 +93,7 @@ async function main() {
   app.use("/api/dashboard", authMiddleware, dashboardRoutes);
   app.use("/api/search", authMiddleware, searchRoutes);
   app.use("/api/reports", authMiddleware, reportRoutes);
+  app.use("/api/sync", authMiddleware, syncRoutes);
   app.use("/api/admin", adminRoutes); // has its own auth checks
   app.use("/api/donate", stripeRoutes);
 

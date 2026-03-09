@@ -1,0 +1,9 @@
+promo/
+reporter/
+src/
+scripts/
+tsconfig.json
+.env
+.env.example
+*.js.map
+*.d.ts.map
