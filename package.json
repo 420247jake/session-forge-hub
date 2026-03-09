@@ -1,0 +1,53 @@
+{
+  "name": "session-forge-hub",
+  "version": "1.0.0",
+  "description": "Team intelligence dashboard for session-forge. Local-first, zero cloud dependencies. See what your AI coding agents are doing — on YOUR infrastructure.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "session-forge-hub": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "seed": "node dist/scripts/seed-demo.js"
+  },
+  "keywords": [
+    "session-forge",
+    "mcp",
+    "claude-code",
+    "enterprise",
+    "dashboard",
+    "ai-memory",
+    "team-intelligence",
+    "local-first",
+    "developer-tools"
+  ],
+  "author": "Jacob Terrell",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/420247jake/session-forge-hub"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.0",
+    "helmet": "^8.0.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.0"
+  },
+  "optionalDependencies": {
+    "stripe": "^17.0.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.0",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.7.0"
+  }
+}

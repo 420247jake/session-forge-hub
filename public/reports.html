@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports - session-forge hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <span class="brand-icon">S</span>
+      session-forge hub
+    </a>
+    <button class="navbar-hamburger" aria-label="Toggle navigation">&#9776;</button>
+    <div class="navbar-links">
+      <a href="index.html">Overview</a>
+      <a href="agents.html">Agents</a>
+      <a href="activity.html">Activity</a>
+      <a href="search.html">Search</a>
+      <a href="reports.html">Reports</a>
+      <a href="security.html">Security</a>
+      <a href="donate.html">Donate</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-container fade-in">
+  <div class="page-header">
+    <h1>Daily Reports</h1>
+    <p class="subtitle">Aggregated activity summaries across all agents</p>
+  </div>
+
+  <!-- Date Picker -->
+  <div class="card mb-lg">
+    <div class="flex items-center gap-md" style="flex-wrap:wrap;">
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label" for="report-date">Report Date</label>
+        <input type="date" id="report-date" class="form-input" style="max-width:220px;">
+      </div>
+      <button class="btn btn-primary" id="load-report-btn" style="align-self:flex-end;">Load Report</button>
+      <button class="btn btn-secondary" id="today-btn" style="align-self:flex-end;">Today</button>
+      <button class="btn btn-ghost" id="regen-btn" style="align-self:flex-end;" title="Force regenerate the report">Regenerate</button>
+    </div>
+  </div>
+
+  <!-- Report Content -->
+  <div id="report-content">
+    <div class="empty-state">
+      <div class="empty-icon">&#128200;</div>
+      <h3>Select a date to view the report</h3>
+      <p>Daily reports aggregate all agent activity for a given day.</p>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var SFH = window.SFH;
+  var C = SFH.components;
+  var esc = SFH.escapeHtml;
+
+  if (!SFH.initAuth()) return;
+
+  var dateInput = document.getElementById('report-date');
+  var loadBtn = document.getElementById('load-report-btn');
+  var todayBtn = document.getElementById('today-btn');
+  var regenBtn = document.getElementById('regen-btn');
+
+  // Set default to today
+  var today = new Date().toISOString().split('T')[0];
+  dateInput.value = today;
+  dateInput.max = today;
+
+  loadBtn.addEventListener('click', function () { loadReport(false); });
+  todayBtn.addEventListener('click', function () {
+    dateInput.value = today;
+    loadReport(false);
+  });
+  regenBtn.addEventListener('click', function () { loadReport(true); });
+  dateInput.addEventListener('change', function () { loadReport(false); });
+
+  // Auto-load today's report
+  loadReport(false);
+
+  async function loadReport(forceRegenerate) {
+    var dateStr = dateInput.value;
+    if (!dateStr) {
+      SFH.showToast('Please select a date.', 'warning');
+      return;
+    }
+
+    var contentEl = document.getElementById('report-content');
+    contentEl.innerHTML = C.createLoading();
+
+    try {
+      var report;
+      if (forceRegenerate) {
+        report = await SFH.apiFetch('/reports/generate', {
+          method: 'POST',
+          body: JSON.stringify({ date: dateStr }),
+        });
+        SFH.showToast('Report regenerated for ' + dateStr, 'success');
+      } else {
+        report = await SFH.apiFetch('/reports/daily?date=' + dateStr);
+      }
+
+      renderReport(report);
+    } catch (err) {
+      contentEl.innerHTML = '<div class="alert alert-error">Failed to load report: ' + esc(err.message) + '</div>';
+    }
+  }
+
+  function renderReport(report) {
+    var contentEl = document.getElementById('report-content');
+
+    // Check if report has any data
+    var hasData = report.agents_active > 0 || report.total_checkpoints > 0 || report.total_decisions > 0;
+
+    if (!hasData) {
+      contentEl.innerHTML = C.createEmptyState(
+        '&#128200;',
+        'No activity for ' + report.date,
+        'No agents reported activity on this date.'
+      );
+      return;
+    }
+
+    var html = '';
+
+    // Stats
+    html += '<div class="stats-row mb-lg">';
+    html += C.createStatsCard('Agents Active', report.agents_active, '&#129302;');
+    html += C.createStatsCard('Checkpoints', report.total_checkpoints, '&#9989;');
+    html += C.createStatsCard('Decisions', report.total_decisions, '&#9878;');
+    html += C.createStatsCard('Dead Ends', report.total_dead_ends, '&#9888;');
+    html += '</div>';
+
+    // Top Projects
+    if (report.top_projects && report.top_projects.length > 0) {
+      html += '<div class="card mb-lg">';
+      html += '<div class="card-header"><h3>Top Projects</h3></div>';
+      html += '<div class="card-body">';
+      html += '<div class="tags-list">';
+      report.top_projects.forEach(function (p) {
+        html += '<span class="tag" style="font-size:0.85rem;padding:0.3rem 0.75rem;">' + esc(p.project) + ' <strong>(' + p.count + ')</strong></span>';
+      });
+      html += '</div></div></div>';
+    }
+
+    // Top Tags
+    if (report.top_tags && report.top_tags.length > 0) {
+      html += '<div class="card mb-lg">';
+      html += '<div class="card-header"><h3>Top Tags</h3></div>';
+      html += '<div class="card-body">';
+      html += '<div class="tags-list">';
+      report.top_tags.forEach(function (t) {
+        html += '<span class="tag">' + esc(t.tag) + ' (' + t.count + ')</span>';
+      });
+      html += '</div></div></div>';
+    }
+
+    // Highlights — Breakthroughs
+    if (report.highlights.breakthroughs && report.highlights.breakthroughs.length > 0) {
+      html += '<div class="card mb-lg" style="border-left:3px solid var(--color-green);">';
+      html += '<div class="card-header"><h3 style="color:var(--color-green);">&#127881; Breakthroughs</h3></div>';
+      html += '<div class="card-body">';
+      report.highlights.breakthroughs.forEach(function (b) {
+        html += C.createReportHighlight(b.agent, b.text);
+      });
+      html += '</div></div>';
+    }
+
+    // Highlights — Key Decisions
+    if (report.highlights.key_decisions && report.highlights.key_decisions.length > 0) {
+      html += '<div class="card mb-lg" style="border-left:3px solid var(--color-blue);">';
+      html += '<div class="card-header"><h3 style="color:var(--color-blue);">&#9878; Key Decisions</h3></div>';
+      html += '<div class="card-body">';
+      report.highlights.key_decisions.forEach(function (d) {
+        html += C.createReportHighlight(d.agent, d.text);
+      });
+      html += '</div></div>';
+    }
+
+    // Highlights — Dead Ends
+    if (report.highlights.critical_dead_ends && report.highlights.critical_dead_ends.length > 0) {
+      html += '<div class="card mb-lg" style="border-left:3px solid var(--color-red);">';
+      html += '<div class="card-header"><h3 style="color:var(--color-red);">&#9888; Dead Ends</h3></div>';
+      html += '<div class="card-body">';
+      report.highlights.critical_dead_ends.forEach(function (de) {
+        html += C.createReportHighlight(de.agent, de.text);
+      });
+      html += '</div></div>';
+    }
+
+    // Report meta
+    html += '<div class="text-sm text-muted text-center mt-lg">';
+    html += 'Report generated: ' + esc(SFH.formatDate(report.generated_at));
+    html += '</div>';
+
+    contentEl.innerHTML = html;
+  }
+})();
+</script>
+
+</body>
+</html>

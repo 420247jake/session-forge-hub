@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Detail - session-forge hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <span class="brand-icon">S</span>
+      session-forge hub
+    </a>
+    <button class="navbar-hamburger" aria-label="Toggle navigation">&#9776;</button>
+    <div class="navbar-links">
+      <a href="index.html">Overview</a>
+      <a href="agents.html">Agents</a>
+      <a href="activity.html">Activity</a>
+      <a href="search.html">Search</a>
+      <a href="reports.html">Reports</a>
+      <a href="security.html">Security</a>
+      <a href="donate.html">Donate</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-container fade-in">
+  <!-- Agent Header -->
+  <div id="agent-header">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-row" id="agent-stats" style="display:none;"></div>
+
+  <!-- Tab Navigation -->
+  <div class="tabs" id="tabs-nav" style="display:none;">
+    <button class="tab-btn active" data-tab="activity">Activity</button>
+    <button class="tab-btn" data-tab="decisions">Decisions</button>
+    <button class="tab-btn" data-tab="dead-ends">Dead Ends</button>
+    <button class="tab-btn" data-tab="journal">Journal</button>
+  </div>
+
+  <!-- Tab Contents -->
+  <div id="tab-activity" class="tab-content active">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+  <div id="tab-decisions" class="tab-content"></div>
+  <div id="tab-dead-ends" class="tab-content"></div>
+  <div id="tab-journal" class="tab-content"></div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var SFH = window.SFH;
+  var C = SFH.components;
+  var esc = SFH.escapeHtml;
+
+  if (!SFH.initAuth()) return;
+
+  var agentId = SFH.getUrlParam('id');
+  if (!agentId) {
+    document.getElementById('agent-header').innerHTML = '<div class="alert alert-error">No agent ID specified. <a href="agents.html">Go back to agents list.</a></div>';
+    return;
+  }
+
+  var agentData = null;
+
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var tabName = this.getAttribute('data-tab');
+
+      // Update button states
+      document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      this.classList.add('active');
+
+      // Update content visibility
+      document.querySelectorAll('.tab-content').forEach(function (c) { c.classList.remove('active'); });
+      document.getElementById('tab-' + tabName).classList.add('active');
+
+      // Load tab data if needed
+      loadTabData(tabName);
+    });
+  });
+
+  loadAgent();
+
+  async function loadAgent() {
+    try {
+      var data = await SFH.apiFetch('/agents/' + agentId);
+      agentData = data;
+
+      document.title = data.name + ' - session-forge hub';
+
+      var isOnline = data.last_seen && (Date.now() - new Date(data.last_seen).getTime()) < 3600000;
+      var statusBadge = data.status === 'active'
+        ? (isOnline ? '<span class="badge badge-online">Online</span>' : '<span class="badge badge-active">Active</span>')
+        : '<span class="badge badge-inactive">Inactive</span>';
+
+      var tagsHtml = '';
+      if (data.tags && data.tags.length > 0) {
+        tagsHtml = '<div class="tags-list mt-md">' +
+          data.tags.map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join('') +
+          '</div>';
+      }
+
+      document.getElementById('agent-header').innerHTML =
+        '<div class="page-header">' +
+          '<div class="flex items-center gap-md mb-sm">' +
+            '<h1>' + esc(data.name) + '</h1>' +
+            statusBadge +
+          '</div>' +
+          '<div class="flex gap-md text-secondary text-sm" style="flex-wrap:wrap;">' +
+            '<span>Developer: <strong>' + esc(data.developer) + '</strong></span>' +
+            '<span>Machine: <strong class="font-mono">' + esc(data.machine) + '</strong></span>' +
+            '<span>Registered: <strong>' + esc(SFH.formatDate(data.registered_at)) + '</strong></span>' +
+            '<span>Last seen: <strong>' + esc(SFH.timeAgo(data.last_seen) || 'Never') + '</strong></span>' +
+          '</div>' +
+          tagsHtml +
+        '</div>';
+
+      // Stats
+      var statsEl = document.getElementById('agent-stats');
+      statsEl.innerHTML =
+        C.createStatsCard('Checkpoints', data.total_checkpoints || 0, '&#9989;') +
+        C.createStatsCard('Decisions', data.total_decisions || 0, '&#9878;') +
+        C.createStatsCard('Dead Ends', data.total_dead_ends || 0, '&#9888;') +
+        C.createStatsCard('Journal Entries', data.total_journal_entries || 0, '&#128214;');
+      statsEl.style.display = '';
+
+      document.getElementById('tabs-nav').style.display = '';
+
+      // Load initial tab
+      loadTabData('activity');
+    } catch (err) {
+      document.getElementById('agent-header').innerHTML = '<div class="alert alert-error">Failed to load agent: ' + esc(err.message) + '. <a href="agents.html">Back to agents.</a></div>';
+    }
+  }
+
+  var loadedTabs = {};
+
+  async function loadTabData(tabName) {
+    if (loadedTabs[tabName]) return;
+
+    var container = document.getElementById('tab-' + tabName);
+    container.innerHTML = C.createLoading();
+
+    try {
+      if (tabName === 'activity') {
+        var data = await SFH.apiFetch('/dashboard/agent/' + agentId + '/activity');
+
+        var html = '';
+
+        // Checkpoints
+        if (data.checkpoints && data.checkpoints.length > 0) {
+          html += '<h3 class="mb-md">Recent Checkpoints</h3>';
+          data.checkpoints.slice(0, 10).forEach(function (cp) {
+            html += C.createCheckpointCard(cp);
+          });
+        }
+
+        if (!html) {
+          html = C.createEmptyState('&#128203;', 'No activity yet', 'This agent has not reported any activity.');
+        }
+
+        container.innerHTML = html;
+
+      } else if (tabName === 'decisions') {
+        var data = await SFH.apiFetch('/dashboard/agent/' + agentId + '/decisions?limit=50');
+
+        if (data.decisions && data.decisions.length > 0) {
+          container.innerHTML = '<h3 class="mb-md">Decisions (' + data.decisions.length + ')</h3>' +
+            data.decisions.map(function (d) { return C.createDecisionCard(d); }).join('');
+        } else {
+          container.innerHTML = C.createEmptyState('&#9878;', 'No decisions recorded', 'Decisions will appear as this agent records them.');
+        }
+
+      } else if (tabName === 'dead-ends') {
+        var data = await SFH.apiFetch('/dashboard/agent/' + agentId + '/dead-ends?limit=50');
+
+        if (data.dead_ends && data.dead_ends.length > 0) {
+          container.innerHTML = '<h3 class="mb-md">Dead Ends (' + data.dead_ends.length + ')</h3>' +
+            data.dead_ends.map(function (de) { return C.createDeadEndCard(de); }).join('');
+        } else {
+          container.innerHTML = C.createEmptyState('&#9888;', 'No dead ends recorded', 'Dead ends will appear as this agent encounters and records them.');
+        }
+
+      } else if (tabName === 'journal') {
+        var data = await SFH.apiFetch('/dashboard/agent/' + agentId + '/activity');
+
+        if (data.journal && data.journal.length > 0) {
+          container.innerHTML = '<h3 class="mb-md">Journal Entries (' + data.journal.length + ')</h3>' +
+            data.journal.map(function (j) { return C.createJournalCard(j); }).join('');
+        } else {
+          container.innerHTML = C.createEmptyState('&#128214;', 'No journal entries', 'Journal entries capture session summaries, breakthroughs, and collaboration notes.');
+        }
+      }
+
+      loadedTabs[tabName] = true;
+    } catch (err) {
+      container.innerHTML = '<div class="alert alert-error">Failed to load data: ' + esc(err.message) + '</div>';
+    }
+  }
+})();
+</script>
+
+</body>
+</html>

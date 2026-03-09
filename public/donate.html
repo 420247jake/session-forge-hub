@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Support session-forge - session-forge hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <span class="brand-icon">S</span>
+      session-forge hub
+    </a>
+    <button class="navbar-hamburger" aria-label="Toggle navigation">&#9776;</button>
+    <div class="navbar-links">
+      <a href="index.html">Overview</a>
+      <a href="agents.html">Agents</a>
+      <a href="activity.html">Activity</a>
+      <a href="search.html">Search</a>
+      <a href="reports.html">Reports</a>
+      <a href="security.html">Security</a>
+      <a href="donate.html">Donate</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-container fade-in">
+  <div class="donate-container">
+    <!-- Success/Cancelled States -->
+    <div id="donation-success" class="hidden">
+      <div class="card text-center" style="padding:3rem;">
+        <div style="font-size:4rem;margin-bottom:1rem;">&#127881;</div>
+        <h1 style="color:var(--color-green);margin-bottom:0.75rem;">Thank You!</h1>
+        <p class="text-secondary" style="font-size:1.1rem;margin-bottom:1.5rem;">Your donation supports the continued development of session-forge and its ecosystem of local-first developer tools.</p>
+        <a href="index.html" class="btn btn-primary btn-lg">Back to Dashboard</a>
+      </div>
+    </div>
+
+    <div id="donation-cancelled" class="hidden">
+      <div class="card text-center" style="padding:3rem;">
+        <div style="font-size:3rem;margin-bottom:1rem;">&#128075;</div>
+        <h2 style="margin-bottom:0.75rem;">Donation Cancelled</h2>
+        <p class="text-secondary mb-lg">No worries! You can always donate later if you change your mind.</p>
+        <a href="donate.html" class="btn btn-secondary">Try Again</a>
+      </div>
+    </div>
+
+    <!-- Main Donation Content -->
+    <div id="donation-main">
+      <div class="text-center mb-lg">
+        <div style="font-size:3rem;margin-bottom:0.75rem;">&#128156;</div>
+        <h1 style="margin-bottom:0.5rem;">Support session-forge</h1>
+        <p class="text-secondary" style="font-size:1.05rem;max-width:500px;margin:0 auto;">session-forge hub is free and open-source. If it's saving your team time, consider throwing a tip.</p>
+      </div>
+
+      <!-- Stripe Section (shown if configured) -->
+      <div id="stripe-section" class="hidden">
+        <div class="card mb-lg">
+          <h3 class="mb-md text-center">Choose an amount</h3>
+
+          <div class="donate-amounts" id="amount-buttons">
+            <button class="amount-btn" data-amount="500">$5</button>
+            <button class="amount-btn selected" data-amount="1000">$10</button>
+            <button class="amount-btn" data-amount="2500">$25</button>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="custom-amount">Or enter a custom amount (USD)</label>
+            <div class="flex gap-sm">
+              <span class="form-input" style="max-width:40px;text-align:center;flex-shrink:0;padding-top:0.7rem;">$</span>
+              <input type="number" id="custom-amount" class="form-input" placeholder="15.00" min="1" max="1000" step="0.01">
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-lg w-full mt-md" id="donate-btn">
+            Donate <span id="donate-amount-label">$10.00</span>
+          </button>
+
+          <p class="text-sm text-muted text-center mt-md">Secure payment via Stripe. No account needed.</p>
+        </div>
+      </div>
+
+      <!-- Fallback Section (shown if Stripe not configured) -->
+      <div id="fallback-section" class="hidden">
+        <div class="card text-center" style="padding:2rem;">
+          <h3 class="mb-md">Stripe is not configured on this hub</h3>
+          <p class="text-secondary mb-lg">You can still support the project through GitHub Sponsors:</p>
+          <a href="https://github.com/sponsors/420247jake" target="_blank" rel="noopener" class="btn btn-primary btn-lg">
+            &#10084; Sponsor on GitHub
+          </a>
+        </div>
+      </div>
+
+      <!-- What Your Donation Supports -->
+      <div class="card mt-lg">
+        <div class="card-header"><h3>What your donation supports</h3></div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:1.5rem;">
+            <div>
+              <h4 style="color:var(--color-blue);margin-bottom:0.35rem;">Open Development</h4>
+              <p class="text-sm text-secondary">All code stays open-source. Your data stays yours.</p>
+            </div>
+            <div>
+              <h4 style="color:var(--color-green);margin-bottom:0.35rem;">New Features</h4>
+              <p class="text-sm text-secondary">Vector search, team permissions, export tools, and more.</p>
+            </div>
+            <div>
+              <h4 style="color:var(--color-purple);margin-bottom:0.35rem;">Community</h4>
+              <p class="text-sm text-secondary">Documentation, tutorials, and ecosystem support.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var SFH = window.SFH;
+
+  // Check for success/cancelled URL params
+  var success = SFH.getUrlParam('success');
+  var cancelled = SFH.getUrlParam('cancelled');
+
+  if (success === 'true') {
+    document.getElementById('donation-main').classList.add('hidden');
+    document.getElementById('donation-success').classList.remove('hidden');
+    return;
+  }
+
+  if (cancelled === 'true') {
+    document.getElementById('donation-main').classList.add('hidden');
+    document.getElementById('donation-cancelled').classList.remove('hidden');
+    return;
+  }
+
+  // Check Stripe configuration
+  checkStripeConfig();
+
+  var selectedAmount = 1000; // $10.00 in cents
+
+  async function checkStripeConfig() {
+    try {
+      var resp = await fetch('/api/donate/config');
+      var data = await resp.json();
+
+      if (data.configured) {
+        document.getElementById('stripe-section').classList.remove('hidden');
+        initStripeUI();
+      } else {
+        document.getElementById('fallback-section').classList.remove('hidden');
+      }
+    } catch (err) {
+      document.getElementById('fallback-section').classList.remove('hidden');
+    }
+  }
+
+  function initStripeUI() {
+    var amountBtns = document.querySelectorAll('.amount-btn');
+    var customInput = document.getElementById('custom-amount');
+    var donateBtn = document.getElementById('donate-btn');
+    var amountLabel = document.getElementById('donate-amount-label');
+
+    // Amount button selection
+    amountBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        amountBtns.forEach(function (b) { b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        selectedAmount = parseInt(btn.getAttribute('data-amount'));
+        customInput.value = '';
+        updateLabel();
+      });
+    });
+
+    // Custom amount
+    customInput.addEventListener('input', function () {
+      var val = parseFloat(customInput.value);
+      if (val && val >= 1) {
+        amountBtns.forEach(function (b) { b.classList.remove('selected'); });
+        selectedAmount = Math.round(val * 100);
+        updateLabel();
+      }
+    });
+
+    function updateLabel() {
+      amountLabel.textContent = '$' + (selectedAmount / 100).toFixed(2);
+    }
+
+    // Donate button
+    donateBtn.addEventListener('click', async function () {
+      if (selectedAmount < 100 || selectedAmount > 100000) {
+        SFH.showToast('Amount must be between $1.00 and $1,000.00', 'warning');
+        return;
+      }
+
+      donateBtn.disabled = true;
+      donateBtn.textContent = 'Redirecting to Stripe...';
+
+      try {
+        var resp = await fetch('/api/donate/create-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: selectedAmount }),
+        });
+
+        var data = await resp.json();
+
+        if (data.url) {
+          window.location.href = data.url;
+        } else if (data.fallback) {
+          window.open(data.fallback, '_blank');
+          donateBtn.disabled = false;
+          donateBtn.innerHTML = 'Donate <span id="donate-amount-label">$' + (selectedAmount / 100).toFixed(2) + '</span>';
+        } else {
+          throw new Error(data.error || 'Failed to create payment session');
+        }
+      } catch (err) {
+        SFH.showToast('Payment failed: ' + err.message, 'error');
+        donateBtn.disabled = false;
+        donateBtn.innerHTML = 'Donate <span id="donate-amount-label">$' + (selectedAmount / 100).toFixed(2) + '</span>';
+      }
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

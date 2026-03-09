@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search - session-forge hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <span class="brand-icon">S</span>
+      session-forge hub
+    </a>
+    <button class="navbar-hamburger" aria-label="Toggle navigation">&#9776;</button>
+    <div class="navbar-links">
+      <a href="index.html">Overview</a>
+      <a href="agents.html">Agents</a>
+      <a href="activity.html">Activity</a>
+      <a href="search.html">Search</a>
+      <a href="reports.html">Reports</a>
+      <a href="security.html">Security</a>
+      <a href="donate.html">Donate</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-container fade-in">
+  <div class="page-header">
+    <h1>Cross-Agent Search</h1>
+    <p class="subtitle">Search decisions and dead ends across all agents</p>
+  </div>
+
+  <!-- Search Form -->
+  <div class="card mb-lg">
+    <div class="search-bar">
+      <input type="text" id="search-query" class="form-input" placeholder="Search decisions, dead ends, lessons learned...">
+      <select id="search-type" class="form-select" style="max-width:200px;">
+        <option value="decisions">Decisions</option>
+        <option value="dead-ends">Dead Ends</option>
+      </select>
+      <button class="btn btn-primary" id="search-btn">Search</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="filter-project">Project (optional)</label>
+        <input type="text" id="filter-project" class="form-input" placeholder="e.g. session-forge">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="filter-tags">Tags (optional, comma-separated)</label>
+        <input type="text" id="filter-tags" class="form-input" placeholder="e.g. architecture, performance">
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="search-results"></div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var SFH = window.SFH;
+  var C = SFH.components;
+  var esc = SFH.escapeHtml;
+
+  if (!SFH.initAuth()) return;
+
+  var searchBtn = document.getElementById('search-btn');
+  var queryInput = document.getElementById('search-query');
+  var typeSelect = document.getElementById('search-type');
+  var projectInput = document.getElementById('filter-project');
+  var tagsInput = document.getElementById('filter-tags');
+
+  searchBtn.addEventListener('click', performSearch);
+  queryInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') performSearch();
+  });
+
+  // Check if there are URL params for pre-filling
+  var urlQuery = SFH.getUrlParam('q');
+  var urlType = SFH.getUrlParam('type');
+  if (urlQuery) {
+    queryInput.value = urlQuery;
+    if (urlType) typeSelect.value = urlType;
+    performSearch();
+  }
+
+  async function performSearch() {
+    var query = queryInput.value.trim();
+    var type = typeSelect.value;
+    var project = projectInput.value.trim();
+    var tags = tagsInput.value.trim();
+
+    if (!query && !project && !tags) {
+      SFH.showToast('Enter a search query, project, or tags to search.', 'warning');
+      return;
+    }
+
+    var resultsEl = document.getElementById('search-results');
+    resultsEl.innerHTML = C.createLoading();
+
+    // Build query string
+    var params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (project) params.set('project', project);
+    if (tags) params.set('tags', tags);
+
+    var endpoint = type === 'decisions' ? '/search/decisions' : '/search/dead-ends';
+
+    try {
+      var data = await SFH.apiFetch(endpoint + '?' + params.toString());
+
+      if (!data.results || data.results.length === 0) {
+        resultsEl.innerHTML = C.createEmptyState(
+          '&#128269;',
+          'No results found',
+          'Try broadening your search query or removing filters.'
+        );
+        return;
+      }
+
+      var html = '<div class="flex items-center justify-between mb-md">' +
+        '<h3>' + data.results.length + ' of ' + data.total + ' results</h3>' +
+        '</div>';
+
+      data.results.forEach(function (result) {
+        html += C.createSearchResultCard(result, type);
+      });
+
+      resultsEl.innerHTML = html;
+    } catch (err) {
+      resultsEl.innerHTML = '<div class="alert alert-error">Search failed: ' + esc(err.message) + '</div>';
+    }
+  }
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agents - session-forge hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <span class="brand-icon">S</span>
+      session-forge hub
+    </a>
+    <button class="navbar-hamburger" aria-label="Toggle navigation">&#9776;</button>
+    <div class="navbar-links">
+      <a href="index.html">Overview</a>
+      <a href="agents.html">Agents</a>
+      <a href="activity.html">Activity</a>
+      <a href="search.html">Search</a>
+      <a href="reports.html">Reports</a>
+      <a href="security.html">Security</a>
+      <a href="donate.html">Donate</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-container fade-in">
+  <div class="page-header flex items-center justify-between">
+    <div>
+      <h1>Agent Management</h1>
+      <p class="subtitle">Register, monitor, and manage your AI agents</p>
+    </div>
+    <button class="btn btn-primary" id="register-btn">+ Register Agent</button>
+  </div>
+
+  <!-- Agents Table -->
+  <div class="table-container" id="agents-table-container">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var SFH = window.SFH;
+  var C = SFH.components;
+  var esc = SFH.escapeHtml;
+
+  if (!SFH.initAuth()) return;
+
+  loadAgents();
+
+  document.getElementById('register-btn').addEventListener('click', showRegisterModal);
+
+  async function loadAgents() {
+    var container = document.getElementById('agents-table-container');
+    try {
+      var data = await SFH.apiFetch('/agents');
+      var agents = data.agents || [];
+
+      if (agents.length === 0) {
+        container.innerHTML = C.createEmptyState('&#129302;', 'No agents registered', 'Click "Register Agent" to create your first agent.');
+        return;
+      }
+
+      var html = '<table><thead><tr>' +
+        '<th>Name</th>' +
+        '<th>Developer</th>' +
+        '<th>Machine</th>' +
+        '<th>Status</th>' +
+        '<th>Last Seen</th>' +
+        '<th>Checkpoints</th>' +
+        '<th>Decisions</th>' +
+        '<th>Dead Ends</th>' +
+        '<th>Actions</th>' +
+        '</tr></thead><tbody>';
+
+      agents.forEach(function (agent) {
+        var isOnline = agent.last_seen && (Date.now() - new Date(agent.last_seen).getTime()) < 3600000;
+        var statusBadge = agent.status === 'active'
+          ? (isOnline ? '<span class="badge badge-online">Online</span>' : '<span class="badge badge-active">Active</span>')
+          : '<span class="badge badge-inactive">Inactive</span>';
+
+        html += '<tr>' +
+          '<td><a href="agent.html?id=' + esc(agent.id) + '" style="font-weight:600;">' + esc(agent.name) + '</a></td>' +
+          '<td>' + esc(agent.developer) + '</td>' +
+          '<td class="text-sm font-mono">' + esc(agent.machine) + '</td>' +
+          '<td>' + statusBadge + '</td>' +
+          '<td class="text-sm text-muted">' + esc(SFH.timeAgo(agent.last_seen) || 'Never') + '</td>' +
+          '<td>' + (agent.total_checkpoints || 0) + '</td>' +
+          '<td>' + (agent.total_decisions || 0) + '</td>' +
+          '<td>' + (agent.total_dead_ends || 0) + '</td>' +
+          '<td>' +
+            '<div class="btn-group">' +
+              '<a href="agent.html?id=' + esc(agent.id) + '" class="btn btn-ghost btn-sm">View</a>' +
+              '<button class="btn btn-secondary btn-sm" onclick="rotateKey(\'' + esc(agent.id) + '\', \'' + esc(agent.name) + '\')">Rotate Key</button>' +
+            '</div>' +
+          '</td>' +
+          '</tr>';
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = '<div class="alert alert-error">Failed to load agents: ' + esc(err.message) + '</div>';
+    }
+  }
+
+  function showRegisterModal() {
+    var formHtml =
+      '<div class="form-group">' +
+        '<label class="form-label" for="reg-name">Agent Name</label>' +
+        '<input type="text" id="reg-name" class="form-input" placeholder="e.g. claude-desktop-main">' +
+      '</div>' +
+      '<div class="form-row">' +
+        '<div class="form-group">' +
+          '<label class="form-label" for="reg-developer">Developer</label>' +
+          '<input type="text" id="reg-developer" class="form-input" placeholder="e.g. Jacob">' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label class="form-label" for="reg-machine">Machine</label>' +
+          '<input type="text" id="reg-machine" class="form-input" placeholder="e.g. desktop-win11">' +
+        '</div>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label" for="reg-tags">Tags (comma-separated, optional)</label>' +
+        '<input type="text" id="reg-tags" class="form-input" placeholder="e.g. primary, frontend, production">' +
+      '</div>';
+
+    var footerHtml =
+      '<button class="btn btn-secondary" id="reg-cancel">Cancel</button>' +
+      '<button class="btn btn-primary" id="reg-submit">Register Agent</button>';
+
+    var modal = C.createModal('Register New Agent', formHtml, footerHtml);
+
+    modal.querySelector('#reg-cancel').addEventListener('click', function () { modal.remove(); });
+    modal.querySelector('#reg-submit').addEventListener('click', handleRegister);
+
+    // Enter key support
+    modal.querySelectorAll('.form-input').forEach(function (input) {
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') handleRegister();
+      });
+    });
+
+    modal.querySelector('#reg-name').focus();
+
+    async function handleRegister() {
+      var name = modal.querySelector('#reg-name').value.trim();
+      var developer = modal.querySelector('#reg-developer').value.trim();
+      var machine = modal.querySelector('#reg-machine').value.trim();
+      var tagsStr = modal.querySelector('#reg-tags').value.trim();
+
+      if (!name || !developer || !machine) {
+        SFH.showToast('Name, Developer, and Machine are required.', 'warning');
+        return;
+      }
+
+      var tags = tagsStr ? tagsStr.split(',').map(function (t) { return t.trim(); }).filter(Boolean) : [];
+
+      var submitBtn = modal.querySelector('#reg-submit');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Registering...';
+
+      try {
+        var result = await SFH.apiFetch('/agents/register', {
+          method: 'POST',
+          body: JSON.stringify({ name: name, developer: developer, machine: machine, tags: tags }),
+        });
+
+        modal.remove();
+        showApiKeyModal(result);
+        loadAgents();
+      } catch (err) {
+        SFH.showToast('Registration failed: ' + err.message, 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Register Agent';
+      }
+    }
+  }
+
+  function showApiKeyModal(result) {
+    var contentHtml =
+      '<div class="alert alert-warning">' +
+        '<strong>Save this API key now!</strong> It will never be shown again. If you lose it, you will need to rotate the key.' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label">Agent ID</label>' +
+        '<div class="copy-box"><code>' + esc(result.agent_id) + '</code><button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText(\'' + esc(result.agent_id) + '\');this.textContent=\'Copied!\';">Copy</button></div>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label">API Key</label>' +
+        '<div class="copy-box"><code style="font-size:0.95rem;">' + esc(result.api_key) + '</code><button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText(\'' + esc(result.api_key) + '\');this.textContent=\'Copied!\';">Copy</button></div>' +
+      '</div>' +
+      '<p class="text-sm text-muted mt-md">Use this API key in your agent\'s session-forge configuration to connect to this hub.</p>';
+
+    var footerHtml = '<button class="btn btn-primary" id="key-dismiss">I\'ve Saved the Key</button>';
+
+    var modal = C.createModal('Agent Registered Successfully', contentHtml, footerHtml);
+    modal.querySelector('#key-dismiss').addEventListener('click', function () { modal.remove(); });
+  }
+
+  // Global rotate key function
+  window.rotateKey = async function (agentId, agentName) {
+    if (!confirm('Rotate API key for "' + agentName + '"? The old key will stop working immediately.')) return;
+
+    try {
+      var result = await SFH.apiFetch('/agents/' + agentId + '/rotate-key', { method: 'POST' });
+
+      var contentHtml =
+        '<div class="alert alert-warning">' +
+          '<strong>Save this new API key now!</strong> The old key has been invalidated.' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label class="form-label">New API Key</label>' +
+          '<div class="copy-box"><code style="font-size:0.95rem;">' + esc(result.api_key) + '</code><button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText(\'' + esc(result.api_key) + '\');this.textContent=\'Copied!\';">Copy</button></div>' +
+        '</div>';
+
+      var footerHtml = '<button class="btn btn-primary" id="rotated-dismiss">I\'ve Saved the Key</button>';
+      var modal = C.createModal('Key Rotated for ' + agentName, contentHtml, footerHtml);
+      modal.querySelector('#rotated-dismiss').addEventListener('click', function () { modal.remove(); });
+    } catch (err) {
+      SFH.showToast('Failed to rotate key: ' + err.message, 'error');
+    }
+  };
+})();
+</script>
+
+</body>
+</html>
