@@ -1,6 +1,6 @@
 {
   "name": "session-forge-hub",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Team intelligence dashboard for session-forge. Local-first, zero cloud dependencies. See what your AI coding agents are doing — on YOUR infrastructure.",
   "type": "module",
   "main": "dist/index.js",
@@ -30,6 +30,12 @@
     "type": "git",
     "url": "https://github.com/420247jake/session-forge-hub"
   },
+  "files": [
+    "dist/",
+    "public/",
+    "README.md",
+    ".env.example"
+  ],
   "engines": {
     "node": ">=18.0.0"
   },
