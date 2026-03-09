@@ -1,6 +1,6 @@
 {
   "name": "session-forge-reporter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Agent reporter for session-forge hub. Watches your local session-forge data and syncs to your team's hub server.",
   "type": "module",
   "main": "dist/index.js",
@@ -21,6 +21,11 @@
   ],
   "author": "Jacob Terrell",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/420247jake/session-forge-hub",
+    "directory": "reporter"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
